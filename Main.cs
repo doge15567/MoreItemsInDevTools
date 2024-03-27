@@ -64,10 +64,9 @@ namespace MoreItemsInDevTools
         }
         
 
-        public static void OnLevelInitHook(LevelInfo info) { SetCheatMenuItems(Prefs.Barcodes.Value); 
-        
-            
-
+        public static void OnLevelInitHook(LevelInfo info)
+        { 
+            SetCheatMenuItems(Prefs.Barcodes.Value); 
         }
         public static void SetCheatMenuItems(string[] BarcodeStrArray)
         {
