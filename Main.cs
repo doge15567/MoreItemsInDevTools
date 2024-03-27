@@ -14,6 +14,7 @@ using UnityEngine;
 using LabFusion.Data;
 using LabFusion.Representation;
 using LabFusion.Network;
+using LabFusion.Patching;
 using LabFusion.Utilities;
 using static MelonLoader.MelonLogger;
 using SLZ.UI;
@@ -61,6 +62,11 @@ namespace MoreItemsInDevTools
 
 
             BoneLib.Hooking.OnLevelInitialized += OnLevelInitHook;
+        }
+        
+        public override void OnLateInitializeMelon()
+        {
+            
         }
         
 

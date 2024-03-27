@@ -1,58 +1,55 @@
-﻿using LabFusion.Data;
-using LabFusion.Network;
-using LabFusion.Representation;
-using SLZ.UI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Il2CppSystem;
 using HarmonyLib;
-using LabFusion.Patching;
-using UnityEngine;
-using SLZ.Marrow.Data;
-using SLZ.Marrow.Pool;
-using BoneLib.Nullables;
+
+using SLZ.UI;
+
+using LabFusion.Data;
+using LabFusion.Network;
+using LabFusion.Utilities;
+
+using HarmonyLib;
+using LabFusion.Data;
+using LabFusion.Representation;
 using MelonLoader;
+using SLZ.UI;
 
-namespace MoreItemsInDevTools
+namespace MoreItemsInDevTools.Patches
 {
-
+    [HarmonyPatch(typeof(LabFusion.Patching.AddDevMenuPatch), "OnSpawnDelegate")]
+    public static class PreventFusionPatch
+    {
+        [HarmonyPrefix]
+        public static bool Prefix()
+        {
+            return false;
+        }
+    }
 
     [HarmonyPatch(typeof(PopUpMenuView), nameof(PopUpMenuView.AddDevMenu))]
-    internal class Patches
+    public static class AddDevMenuPatch
     {
-
+        [HarmonyPrefix]
+        public static void Prefix(PopUpMenuView __instance, ref Action spawnDelegate)
+        {
+            spawnDelegate += (Action)(() => { SpawnListFusion(__instance); });
+        }
+        
         [HarmonyPostfix]
         public static void Postfix(PopUpMenuView __instance)
         {
             SpawnListFusion(__instance);
         }
-        
+
         public static void SpawnListFusion(PopUpMenuView __instance)
         {
             if (NetworkInfo.HasServer && !NetworkInfo.IsServer && RigData.RigReferences.RigManager && RigData.RigReferences.RigManager.uiRig.popUpMenu == __instance)
             {
                 var transform = new SerializedTransform(__instance.radialPageView.transform);
-                
-                foreach (var CrateRef in Main.playerCheatMenu.crates)
+                foreach (var CrateRef in MoreItemsInDevTools.Main.playerCheatMenu.crates)
                 {
                     string barcode = CrateRef.Barcode;
                     MelonLogger.Msg("Spawning " + barcode);
-                    LabFusion.Utilities.PooleeUtilities.RequestSpawn(barcode, transform, PlayerIdManager.LocalSmallId);
-                }
-            }
-            else // Re-implement spawning
-            {
-                var transform = __instance.radialPageView.transform;
-                foreach (var CrateRef in Main.playerCheatMenu.crates)
-                {
-                    Spawnable spawnable = new Spawnable
-                    {
-                        crateRef = CrateRef
-                    };
-                    AssetSpawner.Register(spawnable);
-                    AssetSpawner.Spawn(spawnable, transform.position, default(Quaternion), new BoxedNullable<Vector3>(Vector3.one), ignorePolicy: false, new BoxedNullable<int>(null));
+                    PooleeUtilities.RequestSpawn(barcode, transform, PlayerIdManager.LocalSmallId);
                 }
             }
         }
