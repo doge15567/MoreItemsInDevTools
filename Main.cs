@@ -63,12 +63,6 @@ namespace MoreItemsInDevTools
 
             BoneLib.Hooking.OnLevelInitialized += OnLevelInitHook;
         }
-        
-        public override void OnLateInitializeMelon()
-        {
-            
-        }
-        
 
         public static void OnLevelInitHook(LevelInfo info)
         { 
@@ -76,7 +70,9 @@ namespace MoreItemsInDevTools
         }
         public static void SetCheatMenuItems(string[] BarcodeStrArray)
         {
+#if DEBUG            
             MelonLog.Msg("AITCM Called");
+#endif            
             currentPresetArray = BarcodeStrArray;
 
             playerCheatMenu = Player.rigManager.GetComponent<CheatTool>();
@@ -84,14 +80,18 @@ namespace MoreItemsInDevTools
             List<SpawnableCrateReference> newCrateList = new List<SpawnableCrateReference>();
             foreach (var crateCode in BarcodeStrArray)
             {
+#if  DEBUG
                 MelonLog.Msg("Adding Barcode " + crateCode + " to Array");
+#endif                
                 newCrateList.Add(new SpawnableCrateReference
                 {
                     _barcode = AssetWarehouse.Instance.GetCrate<GameObjectCrate>(crateCode)._barcode
                 });
             }
             playerCheatMenu.crates = newCrateList.ToArray(); // Convert List to Array if necessary
+#if DEBUG            
             MelonLog.Msg("AITCM Ended");
+#endif            
         }
     }
 }
