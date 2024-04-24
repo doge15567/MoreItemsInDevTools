@@ -7,11 +7,8 @@ using LabFusion.Data;
 using LabFusion.Network;
 using LabFusion.Utilities;
 
-using HarmonyLib;
-using LabFusion.Data;
 using LabFusion.Representation;
 using MelonLoader;
-using SLZ.UI;
 
 namespace MoreItemsInDevTools.Patches
 {
@@ -48,7 +45,9 @@ namespace MoreItemsInDevTools.Patches
                 foreach (var CrateRef in MoreItemsInDevTools.Main.playerCheatMenu.crates)
                 {
                     string barcode = CrateRef.Barcode;
+                    #if DEBUG
                     MelonLogger.Msg("Spawning " + barcode);
+                    #endif
                     PooleeUtilities.RequestSpawn(barcode, transform, PlayerIdManager.LocalSmallId);
                 }
             }
