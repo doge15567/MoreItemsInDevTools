@@ -23,7 +23,9 @@ namespace MoreItemsInDevTools
             _presetManager.OnStart();
             _mainCategory = MenuManager.CreateCategory("MoreItemsInDevTools", "#f6f6f6");
             var hotloadButton = _mainCategory.CreateFunctionElement("Reload Presets from file", Color.yellow, () => { _presetManager.LoadPresets(); RebuildBonemenu(); });
-            //RebuildBonemenu(); // Called too early, didnt read crate title properly
+            #if DEBUG
+            Main.MelonLog.Msg("Setting up Bonemenu Category");
+            #endif
         }
 
         public static void BoneMenuNotif(BoneLib.Notifications.NotificationType type, string content)
@@ -38,6 +40,10 @@ namespace MoreItemsInDevTools
             };
             BoneLib.Notifications.Notifier.Send(notif);
 
+            #if DEBUG
+            Main.MelonLog.Msg("Sent notification \"" + content +"\"");
+            #endif
+
         }
 
         public static void RebuildBonemenu()
@@ -47,6 +53,8 @@ namespace MoreItemsInDevTools
                 _mainCategory.RemoveElement(_presetCategory);
             }
 
+            CheckForDefaultPreset();
+
             _presetCategory = _mainCategory.CreateCategory("Presets", Color.white);
 
             var createNewPresetButton = _presetCategory.CreateFunctionElement("Create New Preset", Color.green, () => 
@@ -54,8 +62,16 @@ namespace MoreItemsInDevTools
                 int presetAppend = _presetManager.GetNumberOfPresets();
                 string presetName = "Preset " + presetAppend;
                
-                _presetManager.CreateNewPreset(presetName, _presetManager.DefaultJsonDict["DEFAULT"].Barcodes);
-                CreatePresetCatagory(_presetCategory, presetName);
+                _presetManager.LoadPresets();
+                var success = _presetManager.CreateNewPreset(presetName);
+                if (success)
+                {
+#if DEBUG
+                    Main.MelonLog.Msg("Created New Preset (button press) with name " + presetName);
+#endif
+                    CreatePresetCatagory(_presetCategory, presetName);
+
+                }
             });
 
             foreach (KeyValuePair<string, PresetData> preset in _presetManager.presets)
@@ -66,6 +82,9 @@ namespace MoreItemsInDevTools
         }
         public static void CreatePresetCatagory(MenuCategory category, string presetName)
         {
+#if DEBUG
+            Main.MelonLog.Msg("Creating new Preset Catagory with name " + presetName);
+#endif
             var _category = category.CreateCategory(presetName, Color.white);
 
             var presetData = _presetManager.GetPresetData(presetName);
@@ -73,6 +92,7 @@ namespace MoreItemsInDevTools
             var nameElement = _category.CreateFunctionElement(presetName, Color.white, () => { });
             var applyButton = _category.CreateFunctionElement("Apply Preset", Color.cyan, () => 
             {
+                _presetManager.LoadPresets();
                 var Items = _presetManager.GetPresetData(presetName).Barcodes.ToArray();
                 Main.SetCheatMenuItems(Items);
             });
@@ -82,9 +102,9 @@ namespace MoreItemsInDevTools
                 try 
                 {
                     if (BoneLib.Player.GetObjectInHand(BoneLib.Player.leftHand) == null)
-                    { errortext = "Error: Nothing in left hand."; throw new Exception("Error: Nothing in left hand.");  }
+                    { errortext = "Error: Nothing in left hand."; throw new Exception();  }
                     if (BoneLib.Player.GetComponentInHand<AssetPoolee>(BoneLib.Player.leftHand) == null)
-                    { errortext = "Error: Object is not a spawnable, or is a prefab."; throw new Exception("Error: Object is not a spawnable, or is a prefab."); }
+                    { errortext = "Error: Object is not a spawnable, or is a prefab."; throw new Exception(); }
                     
                     string barcode = BoneLib.Player.GetComponentInHand<AssetPoolee>(BoneLib.Player.leftHand).spawnableCrate.Barcode;
 
@@ -92,7 +112,7 @@ namespace MoreItemsInDevTools
                     CreatePBarcodeCatagory(_category, barcode);
                     _presetManager.SavePresets();
                 }
-                catch (Exception ex) 
+                catch (Exception)
                 {
                     BoneMenuNotif(NotificationType.Error, errortext);
                 }
@@ -125,6 +145,10 @@ namespace MoreItemsInDevTools
             var Title = AssetWarehouse.Instance.GetCrate<GameObjectCrate>(Barcode).Title;
             var _category = category.CreateCategory(Title, Color.white);
 
+#if DEBUG
+            Main.MelonLog.Msg("Creating new Preset Item element with Title "+Title+" and barcode "+Barcode);
+#endif
+
             var titleElement = _category.CreateFunctionElement(Title, Color.white, () => { });
             var barcodeElement = _category.CreateFunctionElement(Barcode, Color.white, () => { });
             var removeButtom = _category.CreateFunctionElement("Remove Item", Color.red, () => 
@@ -133,6 +157,15 @@ namespace MoreItemsInDevTools
                 category.RemoveElement(_category);
                 MenuManager.SelectCategory(category);
             });
+        }
+
+        public static void CheckForDefaultPreset()
+        {
+            if (!_presetManager.presets.ContainsKey("DEFAULT"))
+            {
+                BoneMenuNotif(BoneLib.Notifications.NotificationType.Error, "Error: No DEFAULT preset detected! Attempting to create a new one \n Organization of the JSON file might be mangled!");
+                _presetManager.CreateNewPreset("DEFAULT");
+            }
         }
     }
 }

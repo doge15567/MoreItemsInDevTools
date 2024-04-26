@@ -48,10 +48,17 @@ namespace MoreItemsInDevTools
             {
                 string json = File.ReadAllText(filePath);
                 presets = JsonConvert.DeserializeObject<Dictionary<string, PresetData>>(json);
+#if DEBUG
+                Main.MelonLog.Msg("Loaded JSON file.");
+#endif
             }
             else
             {
                 presets = DefaultJsonDict;
+#if DEBUG
+                Main.MelonLog.Msg("MoreItemsInDevTools.json didnt exist, creating it");
+#endif
+                SavePresets();
             }
         }
 
@@ -59,12 +66,18 @@ namespace MoreItemsInDevTools
         {
             string json = JsonConvert.SerializeObject(presets, Formatting.Indented);
             File.WriteAllText(filePath, json);
+#if DEBUG
+            Main.MelonLog.Msg("Saved presets to file.");
+#endif
         }
 
         public void AddBarcodeToPreset(string presetName, string barcode)
         {
             if (presets.ContainsKey(presetName))
             {
+#if DEBUG
+                Main.MelonLog.Msg("Saving " +barcode + " to preset "+ presetName);
+#endif
                 presets[presetName].Barcodes.Add(barcode);
                 SavePresets();
             }
@@ -78,6 +91,9 @@ namespace MoreItemsInDevTools
         {
             if (presets.ContainsKey(presetName))
             {
+#if DEBUG
+                Main.MelonLog.Msg("Removing barcode "+barcode+ " from preset "+presetName);
+#endif
                 presets[presetName].Barcodes.Remove(barcode);
                 SavePresets();
             }
@@ -87,21 +103,29 @@ namespace MoreItemsInDevTools
             }
         }
 
-        public void CreateNewPreset(string presetName, List<string> barcodes)
+        public bool CreateNewPreset(string presetName)
         {
             if (!presets.ContainsKey(presetName))
             {
-                PresetData newPreset = new PresetData
+#if DEBUG
+                Main.MelonLog.Msg("Creating new preset named "+presetName);
+#endif
+                
+                presets.Add(presetName, new PresetData
                 {
-                    Barcodes = barcodes
-                };
-                presets.Add(presetName, newPreset);
+                    Barcodes = new List<string>
+                    {
+                        "c1534c5a-5747-42a2-bd08-ab3b47616467", "c1534c5a-6b38-438a-a324-d7e147616467", "c1534c5a-3813-49d6-a98c-f595436f6e73", "c1534c5a-c6a8-45d0-aaa2-2c954465764d"
+                    }
+                });
                 SavePresets();
+                return true;
             }
             else
             {
                 Main.MelonLog.Msg("Function CreateNewPreset: Attempted to create a new preset with a pre-existing name.");
                 Bonemenu.BoneMenuNotif(BoneLib.Notifications.NotificationType.Error, "Attempted to create a new preset with a pre-existing name \n Please rename presets in a text editor before creating more.");
+                return false;
             }
         }
 
@@ -109,12 +133,15 @@ namespace MoreItemsInDevTools
         {
             if (presets.ContainsKey(presetName))
             {
+#if DEBUG
+                Main.MelonLog.Msg("Removing preset" + presetName);
+#endif
                 presets.Remove(presetName);
                 SavePresets();
             }
             else
             {
-                Main.MelonLog.Msg("Preset not found.");
+                Main.MelonLog.Msg("RemovePreset: Preset not found.");
             }
         }
 
@@ -126,7 +153,7 @@ namespace MoreItemsInDevTools
             }
             else
             {
-                Console.WriteLine("Preset not found.");
+                Main.MelonLog.Msg("GetPresetData: Preset not found.");
                 return null;
             }
         }

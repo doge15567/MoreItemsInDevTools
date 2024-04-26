@@ -9,6 +9,7 @@ using LabFusion.Utilities;
 
 using LabFusion.Representation;
 using MelonLoader;
+using LabFusion.SDK.Gamemodes;
 
 namespace MoreItemsInDevTools.Patches
 {
@@ -40,15 +41,17 @@ namespace MoreItemsInDevTools.Patches
         public static void SpawnListFusion(PopUpMenuView __instance)
         {
             if (NetworkInfo.HasServer && !NetworkInfo.IsServer && RigData.RigReferences.RigManager && RigData.RigReferences.RigManager.uiRig.popUpMenu == __instance)
-            {
-                var transform = new SerializedTransform(__instance.radialPageView.transform);
-                foreach (var CrateRef in MoreItemsInDevTools.Main.playerCheatMenu.crates)
+            { if (Gamemode.ActiveGamemode.DisableDevTools != true || Gamemode.ActiveGamemode == null)
                 {
-                    string barcode = CrateRef.Barcode;
+                    var transform = new SerializedTransform(__instance.radialPageView.transform);
+                    foreach (var CrateRef in MoreItemsInDevTools.Main.playerCheatMenu.crates)
+                    {
+                        string barcode = CrateRef.Barcode;
                     #if DEBUG
-                    MelonLogger.Msg("Spawning " + barcode);
+                    MelonLogger.Msg("MIDT Fusion: Spawning " + barcode);
                     #endif
-                    PooleeUtilities.RequestSpawn(barcode, transform, PlayerIdManager.LocalSmallId);
+                        PooleeUtilities.RequestSpawn(barcode, transform, PlayerIdManager.LocalSmallId);
+                    }
                 }
             }
         }

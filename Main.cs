@@ -55,15 +55,21 @@ namespace MoreItemsInDevTools
 
         public static void OnLevelInitHook(LevelInfo info)
         {
+#if DEBUG
+            Main.MelonLog.Msg("OnLevelInitHook called.");
+#endif
+            Bonemenu.CheckForDefaultPreset();
             string[] Items = Bonemenu._presetManager.presets["DEFAULT"].Barcodes.ToArray();
+
             SetCheatMenuItems(Items);
         }
 
         public static void SetCheatMenuItems(string[] BarcodeStrArray)
         {
-#if DEBUG            
-            MelonLog.Msg("AITCM Called");
-#endif            
+            #if DEBUG            
+            MelonLog.Msg("SetCheatMenuItems Called");
+            MelonLog.Msg("BarcodeStrArray is :" + BarcodeStrArray);
+            #endif            
             currentPresetArray = BarcodeStrArray;
 
             playerCheatMenu = Player.rigManager.GetComponent<CheatTool>();
@@ -71,18 +77,18 @@ namespace MoreItemsInDevTools
             List<SpawnableCrateReference> newCrateList = new List<SpawnableCrateReference>();
             foreach (var crateCode in BarcodeStrArray)
             {
-#if  DEBUG
+            #if  DEBUG
                 MelonLog.Msg("Adding Barcode " + crateCode + " to Array");
-#endif                
+            #endif
                 newCrateList.Add(new SpawnableCrateReference
                 {
                     _barcode = AssetWarehouse.Instance.GetCrate<GameObjectCrate>(crateCode)._barcode
                 });
             }
             playerCheatMenu.crates = newCrateList.ToArray(); // Convert List to Array if necessary
-#if DEBUG            
-            MelonLog.Msg("AITCM Ended");
-#endif            
+            #if DEBUG            
+            MelonLog.Msg("SetCheatMenuItems Ended");
+            #endif            
         }
     }
 }
