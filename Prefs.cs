@@ -1,6 +1,6 @@
 ﻿using MelonLoader;
-using System;
-using System.Collections.Generic;
+using Il2CppSystem;
+using Il2CppSystem.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,7 +10,9 @@ using System.IO;
 namespace MoreItemsInDevTools
 {
     using BoneLib;
+    using Il2CppInterop.Runtime.Runtime;
     using Newtonsoft.Json;
+    using MelonLoader.Utils;
     using System;
     using System.Collections.Generic;
     using System.IO;
@@ -24,7 +26,7 @@ namespace MoreItemsInDevTools
     public class PresetManager
     {
         public Dictionary<string, PresetData> presets;
-        private string filePath = $"{MelonUtils.UserDataDirectory}/MoreItemsInDevTools.json";
+        private string filePath = $"{MelonEnvironment.UserDataDirectory}/MoreItemsInDevTools.json";
         public readonly Dictionary<string, PresetData> DefaultJsonDict = new Dictionary<string, PresetData>() { { "DEFAULT", new PresetData
                 {
                     Barcodes = new List<string>
@@ -36,6 +38,17 @@ namespace MoreItemsInDevTools
         };
 
 
+        /*
+        public Il2CppSystem.Collections.Generic.Dictionary<string,PresetData> ConvertDictToIL2CppDict(Dictionary<string,PresetData> originDict)
+        {
+            var newDict = new Il2CppSystem.Collections.Generic.Dictionary<string, PresetData> { };
+            foreach (KeyValuePair<string, PresetData> entry in originDict)
+            {
+                newDict.Add(entry.Key, entry.Value);
+            }
+            return newDict;
+        }
+        */
         public void OnStart() 
         {
             LoadPresets();
@@ -47,7 +60,7 @@ namespace MoreItemsInDevTools
             if (File.Exists(filePath))
             {
                 string json = File.ReadAllText(filePath);
-                presets = JsonConvert.DeserializeObject<Dictionary<string, PresetData>>(json);
+                presets = JsonConvert.DeserializeObject<Dictionary<string, PresetData>>(json); // This angers the compiler for some reason but just compile again and you'l be good.
 #if DEBUG
                 Main.MelonLog.Msg("Loaded JSON file.");
 #endif

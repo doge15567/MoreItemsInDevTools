@@ -2,16 +2,11 @@
 using MoreItemsInDevTools;
 using MelonLoader;
 
-[assembly: AssemblyTitle(MoreItemsInDevTools.Main.Description)]
 [assembly: AssemblyDescription(MoreItemsInDevTools.Main.Description)]
-[assembly: AssemblyCompany(MoreItemsInDevTools.Main.Company)]
-[assembly: AssemblyProduct(MoreItemsInDevTools.Main.Name)]
 [assembly: AssemblyCopyright("Developed by " + MoreItemsInDevTools.Main.Author)]
 [assembly: AssemblyTrademark(MoreItemsInDevTools.Main.Company)]
-[assembly: AssemblyVersion(MoreItemsInDevTools.Main.Version)]
-[assembly: AssemblyFileVersion(MoreItemsInDevTools.Main.Version)]
 [assembly: MelonInfo(typeof(MoreItemsInDevTools.Main), MoreItemsInDevTools.Main.Name, MoreItemsInDevTools.Main.Version, MoreItemsInDevTools.Main.Author, MoreItemsInDevTools.Main.DownloadLink)]
-[assembly: MelonColor(System.ConsoleColor.White)]
+[assembly: MelonColor(255,255,255,255)]
 
 // Create and Setup a MelonGame Attribute to mark a Melon as Universal or Compatible with specific Games.
 // If no MelonGame Attribute is found or any of the Values for any MelonGame Attribute on the Melon is null or empty it will be assumed the Melon is Universal.
