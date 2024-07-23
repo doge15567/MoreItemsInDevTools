@@ -9,7 +9,7 @@ using System.IO;
 
 namespace MoreItemsInDevTools
 {
-    using BoneLib;
+    //using BoneLib;
     using Il2CppInterop.Runtime.Runtime;
     using Newtonsoft.Json;
     using MelonLoader.Utils;
@@ -84,6 +84,14 @@ namespace MoreItemsInDevTools
 #endif
         }
 
+        public void CheckForDefaultPreset()
+        {
+            if (!(presets.ContainsKey("DEFAULT")))
+            {
+                //BoneMenuNotif(BoneLib.Notifications.NotificationType.Error, "Error: No DEFAULT preset detected! Attempting to create a new one \n Organization of the JSON file might be mangled!");
+                CreateNewPreset("DEFAULT");
+            }
+        }
         public void AddBarcodeToPreset(string presetName, string barcode)
         {
             if (presets.ContainsKey(presetName))
@@ -137,7 +145,7 @@ namespace MoreItemsInDevTools
             else
             {
                 Main.MelonLog.Msg("Function CreateNewPreset: Attempted to create a new preset with a pre-existing name.");
-                Bonemenu.BoneMenuNotif(BoneLib.Notifications.NotificationType.Error, "Attempted to create a new preset with a pre-existing name \n Please rename presets in a text editor before creating more.");
+                //Bonemenu.BoneMenuNotif(BoneLib.Notifications.NotificationType.Error, "Attempted to create a new preset with a pre-existing name \n Please rename presets in a text editor before creating more.");
                 return false;
             }
         }
@@ -176,7 +184,7 @@ namespace MoreItemsInDevTools
         {
             return presets.Count;
         }
-
+        
 
     }
 
