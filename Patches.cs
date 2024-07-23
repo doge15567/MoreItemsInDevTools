@@ -1,7 +1,7 @@
 ﻿using Il2CppSystem;
 using HarmonyLib;
 
-using SLZ.UI;
+using Il2CppSLZ.UI;
 
 using LabFusion.Data;
 using LabFusion.Network;
@@ -10,6 +10,13 @@ using LabFusion.Utilities;
 using LabFusion.Representation;
 using MelonLoader;
 using LabFusion.SDK.Gamemodes;
+using Il2CppSLZ.Bonelab;
+using LabFusion.Player;
+using Action = System.Action;
+using Il2CppSLZ.Marrow.Data;
+using LabFusion.RPC;
+using BoneLib;
+using Il2CppSLZ.Marrow.Warehouse;
 
 namespace MoreItemsInDevTools.Patches
 {
@@ -17,43 +24,53 @@ namespace MoreItemsInDevTools.Patches
     public static class PreventFusionPatch
     {
         [HarmonyPrefix]
-        public static bool Prefix()
+        public static bool Prefix(PopUpMenuView menu, Action originalDelegate)
         {
+            // If there is no server, we can just spawn the original items as normal
+            if (!NetworkInfo.HasServer)
+            {
+                return true;
+            }
+
+            var playerCheatMenu = Player.RigManager.GetComponent<CheatTool>();
+            var transform = menu.radialPageView.transform;
+
+            foreach (SpawnableCrateReference crateRef in playerCheatMenu.crates)
+            {
+                var spawnable = new Spawnable() { crateRef = new(crateRef.Crate.Barcode) };
+                var spawnableFusionInfo = new NetworkAssetSpawner.SpawnRequestInfo()
+                {
+                    spawnable = spawnable,
+                    position = transform.position,
+                    rotation = transform.rotation
+                };
+
+                NetworkAssetSpawner.Spawn(spawnableFusionInfo);
+            }
+
             return false;
         }
     }
 
-    [HarmonyPatch(typeof(PopUpMenuView), nameof(PopUpMenuView.AddDevMenu))]
-    public static class AddDevMenuPatch
+    [HarmonyPatch(typeof(CheatTool))]
+    [HarmonyPatch(nameof(CheatTool.Start))]
+
+    public class CheatToolPatch
     {
-        [HarmonyPrefix]
-        public static void Prefix(PopUpMenuView __instance, ref Action spawnDelegate)
+        static void Prefix(CheatTool __instance)
         {
-            spawnDelegate += (Action)(() => { SpawnListFusion(__instance); });
-        }
-        
-        [HarmonyPostfix]
-        public static void Postfix(PopUpMenuView __instance)
-        {
-            SpawnListFusion(__instance);
+            Main.currentInstance = __instance;
+
+#if DEBUG
+            Main.MelonLog.Msg("CheatTool Prefix called.");
+#endif
+            Main._presetManager.CheckForDefaultPreset();
+            Main._presetManager.LoadPresets();
+
+            string[] Items = Main._presetManager.presets["DEFAULT"].Barcodes.ToArray();
+            Main.SetCheatMenuItems(Items);
         }
 
-        public static void SpawnListFusion(PopUpMenuView __instance)
-        {
-            if (NetworkInfo.HasServer && !NetworkInfo.IsServer && RigData.RigReferences.RigManager && RigData.RigReferences.RigManager.uiRig.popUpMenu == __instance)
-            { if (Gamemode.ActiveGamemode.DisableDevTools != true || Gamemode.ActiveGamemode == null)
-                {
-                    var transform = new SerializedTransform(__instance.radialPageView.transform);
-                    foreach (var CrateRef in MoreItemsInDevTools.Main.playerCheatMenu.crates)
-                    {
-                        string barcode = CrateRef.Barcode;
-                    #if DEBUG
-                    MelonLogger.Msg("MIDT Fusion: Spawning " + barcode);
-                    #endif
-                        PooleeUtilities.RequestSpawn(barcode, transform, PlayerIdManager.LocalSmallId);
-                    }
-                }
-            }
-        }
     }
+
 }

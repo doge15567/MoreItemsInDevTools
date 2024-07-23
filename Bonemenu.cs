@@ -1,13 +1,13 @@
-﻿using BoneLib.BoneMenu;
-using BoneLib.BoneMenu.Elements;
+﻿
+using BoneLib.BoneMenu;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using SLZ.Marrow.Pool;
-using SLZ.Marrow.Warehouse;
+using Il2CppSLZ.Marrow.Pool;
+using Il2CppSLZ.Marrow.Warehouse;
 using MoreItemsInDevTools;
 using BoneLib.Notifications;
 
@@ -15,14 +15,15 @@ namespace MoreItemsInDevTools
 {
     internal class Bonemenu
     {
-        private static MenuCategory _mainCategory;
-        private static MenuCategory _presetCategory;
+        private static BoneLib.BoneMenu.Page _mainCategory;
+        private static BoneLib.BoneMenu.Page _presetCategory;
+        private static BoneLib.BoneMenu.FunctionElement _presetCategoryLink;
         public static PresetManager _presetManager = new PresetManager();
         public static void BonemenuSetup() 
         {
             _presetManager.OnStart();
-            _mainCategory = MenuManager.CreateCategory("MoreItemsInDevTools", "#f6f6f6");
-            var hotloadButton = _mainCategory.CreateFunctionElement("Reload Presets from file", Color.yellow, () => { _presetManager.LoadPresets(); RebuildBonemenu(); });
+            _mainCategory = BoneLib.BoneMenu.Page.Root.CreatePage("MoreItemsInDevTools", Color.white);
+            var hotloadButton = _mainCategory.CreateFunction("Reload Presets from File", Color.yellow, () => { _presetManager.LoadPresets(); RebuildBonemenu(); });
             #if DEBUG
             Main.MelonLog.Msg("Setting up Bonemenu Category");
             #endif
@@ -50,14 +51,16 @@ namespace MoreItemsInDevTools
         {
             if (_presetCategory != null) 
             {
-                _mainCategory.RemoveElement(_presetCategory);
+                Menu.DestroyPage(_presetCategory);
+                _mainCategory.Remove(_presetCategoryLink);
             }
 
             CheckForDefaultPreset();
 
-            _presetCategory = _mainCategory.CreateCategory("Presets", Color.white);
+            _presetCategory = _mainCategory.CreatePage("Presets", Color.white,createLink: false);
+            _presetCategoryLink = _mainCategory.CreatePageLink(_presetCategory);
 
-            var createNewPresetButton = _presetCategory.CreateFunctionElement("Create New Preset", Color.green, () => 
+            var createNewPresetButton = _presetCategory.CreateFunction("Create New Preset", Color.green, () => 
             {
                 int presetAppend = _presetManager.GetNumberOfPresets();
                 string presetName = "Preset " + presetAppend;
@@ -80,33 +83,34 @@ namespace MoreItemsInDevTools
             }
 
         }
-        public static void CreatePresetCatagory(MenuCategory category, string presetName)
+        public static void CreatePresetCatagory(Page category, string presetName)
         {
 #if DEBUG
             Main.MelonLog.Msg("Creating new Preset Catagory with name " + presetName);
 #endif
-            var _category = category.CreateCategory(presetName, Color.white);
+            var _category = category.CreatePage(presetName, Color.white, createLink: false);
+            var _categoryLink = category.CreatePageLink(_category);
 
             var presetData = _presetManager.GetPresetData(presetName);
 
-            var nameElement = _category.CreateFunctionElement(presetName, Color.white, () => { });
-            var applyButton = _category.CreateFunctionElement("Apply Preset", Color.cyan, () => 
+            var nameElement = _category.CreateFunction(presetName, Color.white, () => { });
+            var applyButton = _category.CreateFunction("Apply Preset", Color.cyan, () => 
             {
                 _presetManager.LoadPresets();
                 var Items = _presetManager.GetPresetData(presetName).Barcodes.ToArray();
                 Main.SetCheatMenuItems(Items);
             });
-            var addItemButton = _category.CreateFunctionElement("Add Item", Color.green, () => 
+            var addItemButton = _category.CreateFunction("Add Item", Color.green, () => 
             {
                 string errortext = "";
                 try 
                 {
-                    if (BoneLib.Player.GetObjectInHand(BoneLib.Player.leftHand) == null)
+                    if (BoneLib.Player.GetObjectInHand(BoneLib.Player.LeftHand) == null)
                     { errortext = "Error: Nothing in left hand."; throw new Exception();  }
-                    if (BoneLib.Player.GetComponentInHand<AssetPoolee>(BoneLib.Player.leftHand) == null)
+                    if (BoneLib.Player.GetComponentInHand<Poolee>(BoneLib.Player.LeftHand).SpawnableCrate == null)
                     { errortext = "Error: Object is not a spawnable, or is a prefab."; throw new Exception(); }
-                    
-                    string barcode = BoneLib.Player.GetComponentInHand<AssetPoolee>(BoneLib.Player.leftHand).spawnableCrate.Barcode;
+
+                    string barcode = BoneLib.Player.GetComponentInHand<Poolee>(BoneLib.Player.LeftHand).SpawnableCrate.Barcode.ID;
 
                     _presetManager.AddBarcodeToPreset(presetName, barcode);
                     CreatePBarcodeCatagory(_category, barcode);
@@ -121,12 +125,13 @@ namespace MoreItemsInDevTools
             FunctionElement removePresetButton;
             if (presetName != "DEFAULT")
             {
-                removePresetButton = _category.CreateFunctionElement("Remove Preset", Color.red, () =>
+                removePresetButton = _category.CreateFunction("Remove Preset", Color.red, () =>
                 {
                     _presetManager.RemovePreset(presetName);
-                    category.RemoveElement(_category);
+                    Menu.DestroyPage(_category);
+                    category.Remove(_categoryLink);
                     _presetManager.SavePresets();
-                    MenuManager.SelectCategory(category);
+                    Menu.OpenPage(category);
 
                 });
             }
@@ -140,22 +145,26 @@ namespace MoreItemsInDevTools
 
         }
 
-        public static void CreatePBarcodeCatagory(MenuCategory category, string Barcode)
+        public static void CreatePBarcodeCatagory(Page category, string Barcode)
         {
-            var Title = AssetWarehouse.Instance.GetCrate<GameObjectCrate>(Barcode).Title;
-            var _category = category.CreateCategory(Title, Color.white);
+            Crate e;
+            AssetWarehouse.Instance.TryGetCrate(new Barcode() { ID = Barcode }, out e);
+            var Title = e.Title;
+            var _category = category.CreatePage(Title, Color.white, createLink: false);
+            var _categoryLink = category.CreatePageLink(_category);
 
 #if DEBUG
             Main.MelonLog.Msg("Creating new Preset Item element with Title "+Title+" and barcode "+Barcode);
 #endif
 
-            var titleElement = _category.CreateFunctionElement(Title, Color.white, () => { });
-            var barcodeElement = _category.CreateFunctionElement(Barcode, Color.white, () => { });
-            var removeButtom = _category.CreateFunctionElement("Remove Item", Color.red, () => 
+            var titleElement = _category.CreateFunction(Title, Color.white, () => { });
+            var barcodeElement = _category.CreateFunction(Barcode, Color.white, () => { });
+            var removeButtom = _category.CreateFunction("Remove Item", Color.red, () => 
             {
                 _presetManager.RemoveBarcodeFromPreset(category.Name, Barcode);
-                category.RemoveElement(_category);
-                MenuManager.SelectCategory(category);
+                Menu.DestroyPage(_category);
+                category.Remove(_categoryLink);
+                Menu.OpenPage(category);
             });
         }
 

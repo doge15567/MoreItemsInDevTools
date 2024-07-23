@@ -1,23 +1,35 @@
 ﻿using MelonLoader;
-using BoneLib;
-using System.Runtime.InteropServices;
-using SLZ.Bonelab;
+using static MelonLoader.MelonLogger;
+
 using System;
-using SLZ.Marrow.Warehouse;
-using Harmony;
-using HarmonyLib;
+using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Linq;
-using BoneLib.BoneMenu.Elements;
-using BoneLib.BoneMenu;
+
+using Il2CppSLZ;
+using Il2CppSLZ.Bonelab;
+using Il2CppSLZ.Marrow.Warehouse;
+using Il2CppSLZ.UI;
 using UnityEngine;
+//using SLZ.Bonelab;
+
+//using SLZ.Marrow.Warehouse;
+using Harmony;
+using HarmonyLib;
+using static Il2CppSystem.Array;
+using Il2CppSLZ.Rig;
+using Il2CppSLZ.Marrow.SceneStreaming;
+using BoneLib;
+using Il2CppSLZ.VRMK;
+using Il2CppSLZ.Marrow;
+/*
 using LabFusion.Data;
 using LabFusion.Representation;
 using LabFusion.Network;
 using LabFusion.Patching;
 using LabFusion.Utilities;
-using static MelonLoader.MelonLogger;
-using SLZ.UI;
+*/
+//using SLZ.UI;
 
 
 namespace MoreItemsInDevTools
@@ -25,44 +37,83 @@ namespace MoreItemsInDevTools
     internal partial class Main : MelonMod
     {
         
-        internal const string Name = "More Items in Dev Tools";
+        internal const string Name = "More Items in Dev Tools (Rework BoneMenu)";
         internal const string Description = "Adds more items to list of items spawned by dev tools cheat";
         internal const string Author = "doge15567";
         internal const string Company = "";
-        internal const string Version = "3.0.0";
+        internal const string Version = "3.0.1";
         internal const string DownloadLink = "https://thunderstore.io/c/bonelab/p/doge15567/MoreItemsInDevTools/";
         internal static MelonLogger.Instance MelonLog;
-        private static MenuCategory _mainCategory;
+        internal static HarmonyLib.Harmony Harmoney;
         internal static bool hasfusion; 
         internal static CheatTool playerCheatMenu;
 
-        internal static string[] currentPresetArray;
+        public static PresetManager _presetManager = new PresetManager();
+        public static string[] currentPresetArray;
+        public static CheatTool currentInstance;
+
+
+        // TODO: Make player name Preset when creating it
+        // Add Preset Rename Option
+
+
+        private static System.Timers.Timer _timer;
         public override void OnInitializeMelon()
         {
             MelonLog = LoggerInstance;
+            Harmoney = HarmonyInstance;
             MelonLog.Msg("Initalised Mod");
             Bonemenu.BonemenuSetup();
 
-            _mainCategory = MenuManager.CreateCategory("MoreItemsInDevTools", "#f6f6f6");
+            hasfusion = false;
             hasfusion = HelperMethods.CheckIfAssemblyLoaded("labfusion");
+            if (hasfusion)
+            {
+            }
+              
+            
+
+            //Hooking.OnSwitchAvatarPostfix += OnPostAvatarSwap;
+            Hooking.OnMarrowGameStarted += OnMarrowGameStartedHook;
+            _presetManager.OnStart();
 
 
-            BoneLib.Hooking.OnLevelInitialized += OnLevelInitHook;
-            BoneLib.Hooking.OnMarrowGameStarted += OnMarrowGameStartedHook;
+            //BoneLib.Hooking.OnGripAttached
         }
+
+        public static void OnPostAvatarSwap(Il2CppSLZ.VRMK.Avatar unused) 
+        {
+            ForceRadial("Avatar Swap");
+            _timer = new System.Timers.Timer(500);
+            _timer.AutoReset = false;
+            _timer.Elapsed += (sender, args) =>
+            {
+                ForceRadial("Avatar Timer");
+            };
+            _timer.Start();
+        }
+
 
         public static void OnMarrowGameStartedHook() { Bonemenu.RebuildBonemenu(); }
 
-        public static void OnLevelInitHook(LevelInfo info)
+        public static void ForceRadial(string add)
         {
 #if DEBUG
-            Main.MelonLog.Msg("OnLevelInitHook called.");
-#endif
-            Bonemenu.CheckForDefaultPreset();
-            string[] Items = Bonemenu._presetManager.presets["DEFAULT"].Barcodes.ToArray();
+            MelonLog.Msg("Fixed Radial (Hopefully)" + add);
 
-            SetCheatMenuItems(Items);
+#endif
+            Player.RigManager.GetComponentInChildren<BodyVitals>().quickmenuEnabled = true;
+            Player.RigManager.ControllerRig.TryCast<OpenControllerRig>().quickmenuEnabled = true;
         }
+
+        
+        
+
+
+        
+
+
+
 
         public static void SetCheatMenuItems(string[] BarcodeStrArray)
         {
@@ -72,23 +123,25 @@ namespace MoreItemsInDevTools
             #endif            
             currentPresetArray = BarcodeStrArray;
 
-            playerCheatMenu = Player.rigManager.GetComponent<CheatTool>();
+            
+
+            playerCheatMenu = currentInstance;
 
             List<SpawnableCrateReference> newCrateList = new List<SpawnableCrateReference>();
             foreach (var crateCode in BarcodeStrArray)
             {
-            #if  DEBUG
+                #if  DEBUG
                 MelonLog.Msg("Adding Barcode " + crateCode + " to Array");
-            #endif
+             #endif
                 newCrateList.Add(new SpawnableCrateReference
                 {
-                    _barcode = AssetWarehouse.Instance.GetCrate<GameObjectCrate>(crateCode)._barcode
+                    _barcode = new Barcode() { ID = crateCode }
                 });
             }
-            playerCheatMenu.crates = newCrateList.ToArray(); // Convert List to Array if necessary
+            playerCheatMenu.crates = newCrateList.ToArray();
             #if DEBUG            
             MelonLog.Msg("SetCheatMenuItems Ended");
-            #endif            
+            #endif
         }
     }
 }

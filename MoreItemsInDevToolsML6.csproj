@@ -1,0 +1,62 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="COPY /y $(TargetPath) &quot;C:\Program Files (x86)\Steam\steamapps\common\BONELAB\Mods&quot;&#xD;&#xA;COPY /y &quot;$(TargetDir)$(TargetName).pdb&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\BONELAB\Mods&quot;" />
+  </Target>
+
+
+
+	<ItemGroup>
+		<Reference Include="0Harmony">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\net6\0Harmony.dll</HintPath>
+		</Reference>
+		<Reference Include="Assembly-CSharp">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\Il2CppAssemblies\Assembly-CSharp.dll</HintPath>
+		</Reference>
+		<Reference Include="Assembly-CSharp-firstpass">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\Il2CppAssemblies\Assembly-CSharp-firstpass.dll</HintPath>
+		</Reference>
+		<Reference Include="BoneLib">
+		  <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\Mods\BoneLib.dll</HintPath>
+		</Reference>
+		<Reference Include="Il2CppInterop.Runtime">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\net6\Il2CppInterop.Runtime.dll</HintPath>
+		</Reference>
+		<Reference Include="Il2Cppmscorlib">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\Il2CppAssemblies\Il2Cppmscorlib.dll</HintPath>
+		</Reference>
+		<Reference Include="Il2CppSLZ.Marrow">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\Il2CppAssemblies\Il2CppSLZ.Marrow.dll</HintPath>
+		</Reference>
+		<Reference Include="Il2CppSystem">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\Il2CppAssemblies\Il2CppSystem.dll</HintPath>
+		</Reference>
+		<Reference Include="LabFusion">
+		  <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\Mods\LabFusion.dll</HintPath>
+		</Reference>
+		<Reference Include="MelonLoader">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\net6\MelonLoader.dll</HintPath>
+		</Reference>
+		<Reference Include="Newtonsoft.Json">
+		  <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\Managed\Newtonsoft.Json.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\Il2CppAssemblies\UnityEngine.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\Il2CppAssemblies\UnityEngine.CoreModule.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.PhysicsModule">
+			<HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\MelonLoader\Il2CppAssemblies\UnityEngine.PhysicsModule.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+	
+	
+	
+</Project>
