@@ -4,18 +4,19 @@ using Il2CppSystem.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+//using Newtonsoft.Json;
 using System.IO;
 
 namespace MoreItemsInDevTools
 {
     //using BoneLib;
     using Il2CppInterop.Runtime.Runtime;
-    using Newtonsoft.Json;
+    //using Newtonsoft.Json;
     using MelonLoader.Utils;
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Text.Json;
 
     // public static string SavePath = MelonUtils.UserDataDirectory;
     public class PresetData
@@ -36,6 +37,7 @@ namespace MoreItemsInDevTools
                 } 
             } 
         };
+        JsonSerializerOptions prettyPrint = new JsonSerializerOptions { WriteIndented = true };
 
 
         /*
@@ -60,7 +62,8 @@ namespace MoreItemsInDevTools
             if (File.Exists(filePath))
             {
                 string json = File.ReadAllText(filePath);
-                presets = JsonConvert.DeserializeObject<Dictionary<string, PresetData>>(json); // This angers the compiler for some reason but just compile again and you'l be good.
+                presets = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, PresetData>>(json);
+                //presets = JsonConvert.DeserializeObject<Dictionary<string, PresetData>>(json); // This angers the compiler for some reason but just compile again and you'l be good.
 #if DEBUG
                 Main.MelonLog.Msg("Loaded JSON file.");
 #endif
@@ -77,7 +80,8 @@ namespace MoreItemsInDevTools
 
         public void SavePresets()
         {
-            string json = JsonConvert.SerializeObject(presets, Formatting.Indented);
+            //string json = JsonConvert.SerializeObject(presets, Formatting.Indented);
+            string json = JsonSerializer.Serialize(presets, prettyPrint);
             File.WriteAllText(filePath, json);
 #if DEBUG
             Main.MelonLog.Msg("Saved presets to file.");
