@@ -1,119 +1,50 @@
 ﻿using MelonLoader;
-using static MelonLoader.MelonLogger;
-
-using System;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Linq;
-
-using Il2CppSLZ;
 using Il2CppSLZ.Bonelab;
 using Il2CppSLZ.Marrow.Warehouse;
-using Il2CppSLZ.UI;
-using UnityEngine;
-//using SLZ.Bonelab;
-
-//using SLZ.Marrow.Warehouse;
-using Harmony;
-using HarmonyLib;
-using static Il2CppSystem.Array;
-using Il2CppSLZ.Rig;
-using Il2CppSLZ.Marrow.SceneStreaming;
-using BoneLib;
-using Il2CppSLZ.VRMK;
-using Il2CppSLZ.Marrow;
-/*
-using LabFusion.Data;
-using LabFusion.Representation;
-using LabFusion.Network;
-using LabFusion.Patching;
-using LabFusion.Utilities;
-*/
-//using SLZ.UI;
-
+using System.Xml.Linq;
 
 namespace MoreItemsInDevTools
 {
     internal partial class Main : MelonMod
     {
         
-        internal const string Name = "More Items in Dev Tools (Rework BoneMenu)";
+        internal const string Name = "More Items in Dev Tools";
         internal const string Description = "Adds more items to list of items spawned by dev tools cheat";
         internal const string Author = "doge15567";
         internal const string Company = "";
-        internal const string Version = "3.0.1";
+        internal const string Version = "3.0.4";
         internal const string DownloadLink = "https://thunderstore.io/c/bonelab/p/doge15567/MoreItemsInDevTools/";
         internal static MelonLogger.Instance MelonLog;
         internal static HarmonyLib.Harmony Harmoney;
-        internal static bool hasfusion; 
         internal static CheatTool playerCheatMenu;
 
         public static PresetManager _presetManager = new PresetManager();
         public static string[] currentPresetArray;
         public static CheatTool currentInstance;
+        public static bool oldAssemblyDetected = false;
+        public const string oadString = "An older version of the mod is installed alongside the current version, please delete MoreItemsInDevToolsML6.dll and related files!";
 
+        public override void OnEarlyInitializeMelon()
+        {
+        }
 
-        // TODO: Make player name Preset when creating it
-        // Add Preset Rename Option
-
-
-        private static System.Timers.Timer _timer;
         public override void OnInitializeMelon()
         {
             MelonLog = LoggerInstance;
             Harmoney = HarmonyInstance;
             MelonLog.Msg("Initalised Mod");
-            Bonemenu.BonemenuSetup();
-
-            hasfusion = false;
-            hasfusion = HelperMethods.CheckIfAssemblyLoaded("labfusion");
-            if (hasfusion)
-            {
-            }
-              
-            
-
-            //Hooking.OnSwitchAvatarPostfix += OnPostAvatarSwap;
-            Hooking.OnMarrowGameStarted += OnMarrowGameStartedHook;
             _presetManager.OnStart();
-
-
-            //BoneLib.Hooking.OnGripAttached
+            if (CheckIfAssemblyLoaded("MoreItemsInDevToolsML6")) oldAssemblyDetected = true;
+            if (oldAssemblyDetected) MelonLog.Warning(oadString);
+            if (CheckIfAssemblyLoaded("BoneLib")) BonelibSetup();
         }
 
-        public static void OnPostAvatarSwap(Il2CppSLZ.VRMK.Avatar unused) 
+        private static void BonelibSetup()
         {
-            ForceRadial("Avatar Swap");
-            _timer = new System.Timers.Timer(500);
-            _timer.AutoReset = false;
-            _timer.Elapsed += (sender, args) =>
-            {
-                ForceRadial("Avatar Timer");
-            };
-            _timer.Start();
+            if (oldAssemblyDetected) Bonemenu.BoneMenuNotif(BoneLib.Notifications.NotificationType.Warning, oadString);
+            Bonemenu.BonemenuSetup();
+            BoneLib.Hooking.OnMarrowGameStarted += Bonemenu.RebuildBonemenu;
         }
-
-
-        public static void OnMarrowGameStartedHook() { Bonemenu.RebuildBonemenu(); }
-
-        public static void ForceRadial(string add)
-        {
-#if DEBUG
-            MelonLog.Msg("Fixed Radial (Hopefully)" + add);
-
-#endif
-            Player.RigManager.GetComponentInChildren<BodyVitals>().quickmenuEnabled = true;
-            Player.RigManager.ControllerRig.TryCast<OpenControllerRig>().quickmenuEnabled = true;
-        }
-
-        
-        
-
-
-        
-
-
-
 
         public static void SetCheatMenuItems(string[] BarcodeStrArray)
         {
@@ -142,6 +73,29 @@ namespace MoreItemsInDevTools
             #if DEBUG            
             MelonLog.Msg("SetCheatMenuItems Ended");
             #endif
+        }
+
+        public static string[] RemoveDuplicateBarcodes(string[] s) // https://stackoverflow.com/a/9833
+        {
+            HashSet<string> set = new HashSet<string>(s);
+            string[] result = new string[set.Count];
+            set.CopyTo(result);
+            return result;
+        }
+        public static bool CheckIfAssemblyLoaded(string name)  // Check for bonelib with bonelib method lol
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                string asmName = assemblies[i].GetName().Name;
+                if (asmName.ToLower() == name.ToLower())
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

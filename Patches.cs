@@ -3,24 +3,50 @@ using HarmonyLib;
 
 using Il2CppSLZ.UI;
 
-using LabFusion.Data;
-using LabFusion.Network;
-using LabFusion.Utilities;
 
-using LabFusion.Representation;
 using MelonLoader;
-using LabFusion.SDK.Gamemodes;
-using Il2CppSLZ.Bonelab;
-using LabFusion.Player;
 using Action = System.Action;
 using Il2CppSLZ.Marrow.Data;
-using LabFusion.RPC;
 using BoneLib;
 using Il2CppSLZ.Marrow.Warehouse;
 
+using LabFusion.Data;
+using LabFusion.Network;
+using Il2CppSLZ.Bonelab;
+using LabFusion.Player;
+using LabFusion.RPC;
+
+
+
 namespace MoreItemsInDevTools.Patches
 {
-    [HarmonyPatch(typeof(LabFusion.Patching.AddDevMenuPatch), "OnSpawnDelegate")]
+    [HarmonyPatch(typeof(CheatTool))]
+    [HarmonyPatch(nameof(CheatTool.Start))]
+
+    public class CheatToolPatch
+    {
+        static bool Prefix(CheatTool __instance)
+        {
+            Main.currentInstance = __instance;
+
+#if DEBUG
+            Main.MelonLog.Msg("CheatTool Prefix called.");
+#endif
+            Main._presetManager.CheckForDefaultPreset();
+            Main._presetManager.LoadPresets();
+
+            string[] Items = Main._presetManager.presets["DEFAULT"].Barcodes.ToArray();
+            Main.SetCheatMenuItems(Items);
+
+            return true;
+        }
+
+    }
+
+
+
+
+    [HarmonyPatch(typeof(LabFusion.Patching.AddDevMenuPatch), nameof(LabFusion.Patching.AddDevMenuPatch.OnSpawnDelegate))]
     public static class PreventFusionPatch
     {
         [HarmonyPrefix]
@@ -32,12 +58,16 @@ namespace MoreItemsInDevTools.Patches
                 return true;
             }
 
-            var playerCheatMenu = Player.RigManager.GetComponent<CheatTool>();
+            CheatTool playerCheatMenu = Main.currentInstance;
             var transform = menu.radialPageView.transform;
 
-            foreach (SpawnableCrateReference crateRef in playerCheatMenu.crates)
+            // Sanitization, prevent skid crashing by only allowing 5 unique spawnables to be spawned at a time.
+            string[] sanitizedStringArray = Main.RemoveDuplicateBarcodes(Main.currentPresetArray);
+            System.Array.Resize(ref sanitizedStringArray, 5);
+            
+            foreach (string crateRef in sanitizedStringArray)
             {
-                var spawnable = new Spawnable() { crateRef = new(crateRef.Crate.Barcode) };
+                var spawnable = new Spawnable() { crateRef = new(crateRef) };
                 var spawnableFusionInfo = new NetworkAssetSpawner.SpawnRequestInfo()
                 {
                     spawnable = spawnable,
@@ -52,25 +82,5 @@ namespace MoreItemsInDevTools.Patches
         }
     }
 
-    [HarmonyPatch(typeof(CheatTool))]
-    [HarmonyPatch(nameof(CheatTool.Start))]
-
-    public class CheatToolPatch
-    {
-        static void Prefix(CheatTool __instance)
-        {
-            Main.currentInstance = __instance;
-
-#if DEBUG
-            Main.MelonLog.Msg("CheatTool Prefix called.");
-#endif
-            Main._presetManager.CheckForDefaultPreset();
-            Main._presetManager.LoadPresets();
-
-            string[] Items = Main._presetManager.presets["DEFAULT"].Barcodes.ToArray();
-            Main.SetCheatMenuItems(Items);
-        }
-
-    }
-
+   
 }
