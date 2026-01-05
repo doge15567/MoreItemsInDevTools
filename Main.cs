@@ -28,7 +28,7 @@ namespace MoreItemsInDevTools
         {
             MelonLog = LoggerInstance;
             Harmoney = HarmonyInstance;
-            MelonLog.Msg("Initalised Mod");
+            MelonLog.Msg("Initalising Mod");
             if (CheckIfAssemblyLoaded("MoreItemsInDevToolsML6")) oldAssemblyDetected = true;
             if (oldAssemblyDetected) MelonLog.Warning(oadString);
             if (CheckIfAssemblyLoaded("BoneLib")) BonelibSetup();
@@ -37,7 +37,7 @@ namespace MoreItemsInDevTools
             if (hasFusion)
             {
                 Patches.AddDevMenuPatch.Patch();
-                Patches.PreventFusionPatch.Patch();
+                //Patches.PreventFusionPatch.Patch();
             }
         }
 

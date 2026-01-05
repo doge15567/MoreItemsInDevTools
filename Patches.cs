@@ -94,18 +94,20 @@ namespace MoreItemsInDevTools.Patches
         }
     }
 
-    public static class PreventFusionPatch
-    {
-        public static void Patch()
-        {
-            var orig = typeof(MarrowFusion.Bonelab.Patching.PopUpMenuViewPatches).GetMethod("AddDevMenuPrefix", AccessTools.all);
-            var prefix = new HarmonyMethod(typeof(PreventFusionPatch).GetMethod("Prefix", AccessTools.all));
+    //public static class PreventFusionPatch
+    //{
+    //    // This doesnt work for some reason as the module assembly isnt loaded at the time this is called (except that the exception is thrown after the module is loaded???
+    //    // This however, doesnt matter as this patch happens later than the fusion patch, which with how the patch is written still completely overwrites it.
+    //    public static void Patch()
+    //    {
+    //        var orig = typeof(MarrowFusion.Bonelab.Patching.PopUpMenuViewPatches).GetMethod("AddDevMenuPrefix", AccessTools.all);
+    //        var prefix = new HarmonyMethod(typeof(PreventFusionPatch).GetMethod("Prefix", AccessTools.all));
 
-            Main.Harmoney.Patch(orig, prefix);
-        }
-        public static bool Prefix()
-        {
-            return false;
-        }
-    }
+    //        Main.Harmoney.Patch(orig, prefix);
+    //    }
+    //    public static bool Prefix()
+    //    {
+    //        return false;
+    //    }
+    //}
 }

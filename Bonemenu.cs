@@ -182,7 +182,7 @@ namespace MoreItemsInDevTools
             var title = "Invalid Crate";
 
             if (isValid)
-                title = crateRef.Crate.Title;
+                title = bandage + crateRef.Crate.Title;
             
             var _category = category.CreatePage(title, (isValid ? Color.white : Color.red), createLink: false);
             var _categoryLink = category.CreatePageLink(_category);
@@ -201,5 +201,7 @@ namespace MoreItemsInDevTools
                 Menu.OpenPage(category);
             });
         }
+        // CreateBoneMenuInvisDifferentiator
+        public static string bandage => $"<size=0>{UnityEngine.Random.RandomRangeInt(int.MinValue, int.MaxValue):D10}</size>";
     }
 }
