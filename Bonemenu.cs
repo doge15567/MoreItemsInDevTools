@@ -1,15 +1,16 @@
 ﻿
 using BoneLib.BoneMenu;
+using BoneLib.Notifications;
+using Il2CppSLZ.Marrow.Pool;
+using Il2CppSLZ.Marrow.Warehouse;
+using MelonLoader;
+using MoreItemsInDevTools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using Il2CppSLZ.Marrow.Pool;
-using Il2CppSLZ.Marrow.Warehouse;
-using MoreItemsInDevTools;
-using BoneLib.Notifications;
 
 namespace MoreItemsInDevTools
 {
@@ -19,14 +20,25 @@ namespace MoreItemsInDevTools
         private static BoneLib.BoneMenu.Page _presetCategory;
         private static BoneLib.BoneMenu.FunctionElement _presetCategoryLink;
         public static PresetManager _presetManager = new PresetManager();
+        public static readonly MelonPreferences_Category GlobalCategory = MelonPreferences.CreateCategory("MoreItemsInDevTools");
+        public static MelonPreferences_Entry<bool> ApplyDefaultOnLevelLoad { get; private set; }
         public static void BonemenuSetup()
         {
-            _presetManager.OnStart();
-            _mainCategory = BoneLib.BoneMenu.Page.Root.CreatePage("MoreItemsInDevTools", Color.white);
-            var hotloadButton = _mainCategory.CreateFunction("Reload Presets from File", Color.yellow, () => { _presetManager.LoadPresets(); RebuildBonemenu(); });
 #if DEBUG
             Main.MelonLog.Msg("Setting up Bonemenu Category");
 #endif
+            _presetManager.OnStart();
+            _mainCategory = BoneLib.BoneMenu.Page.Root.CreatePage("MoreItemsInDevTools", Color.white);
+            var hotloadButton = _mainCategory.CreateFunction("Reload Presets from File", Color.yellow, () => { _presetManager.LoadPresets(); RebuildBonemenu(); });
+            ApplyDefaultOnLevelLoad = GlobalCategory.GetEntry<bool>("ApplyDefaultOnLevelLoad") ?? GlobalCategory.CreateEntry("ApplyDefaultOnLevelLoad", true);
+
+            var defaultBehaviourToggler = _mainCategory.CreateBool("Apply Default On Level Load:", Color.white, ApplyDefaultOnLevelLoad.Value, 
+                (b) => 
+                { 
+                    ApplyDefaultOnLevelLoad.Value = b; 
+                    GlobalCategory.SaveToFile(false); 
+                }
+            );
         }
 
         public static void BoneMenuNotif(BoneLib.Notifications.NotificationType type, string content)
@@ -54,8 +66,6 @@ namespace MoreItemsInDevTools
                 Menu.DestroyPage(_presetCategory);
                 _mainCategory.Remove(_presetCategoryLink);
             }
-
-            CheckForDefaultPreset();
 
             _presetCategory = _mainCategory.CreatePage("Presets", Color.white, createLink: false);
             _presetCategoryLink = _mainCategory.CreatePageLink(_presetCategory);
@@ -95,23 +105,20 @@ namespace MoreItemsInDevTools
 
             var nameStringElement = _category.CreateFunction(presetName, Color.white, () => { });
             var newnamestring = presetName;
-            if (presetName != "DEFAULT") 
-            { 
-                _category.CreateString("Rename Preset", Color.white, presetName, (s) => { newnamestring = s; });
-                _category.CreateFunction("Apply New Name", Color.white, () =>
+            _category.CreateString("Rename Preset", Color.white, presetName, (s) => { newnamestring = s; });
+            _category.CreateFunction("Apply New Name", Color.white, () =>
+            {
+                string s = newnamestring;
+                if (!_presetManager.presets.ContainsKey(s))
                 {
-                    string s = newnamestring;
-                    if (!_presetManager.presets.ContainsKey(s))
-                    {
-                        _presetManager.RemovePreset(presetName);
-                        _presetManager.presets.Add(s, presetData);
-                        _presetManager.SavePresets();
-                        RebuildBonemenu();
-                        BoneLib.BoneMenu.Menu.OpenPage(_presetCategory);
-                    }
-                    else BoneMenuNotif(NotificationType.Error, $"Error renaming preset {presetName} to {s}, as a preset of name {s} already exists!");
-                });
-            }
+                    _presetManager.RemovePreset(presetName);
+                    _presetManager.presets.Add(s, presetData);
+                    _presetManager.SavePresets();
+                    RebuildBonemenu();
+                    BoneLib.BoneMenu.Menu.OpenPage(_presetCategory);
+                }
+                else BoneMenuNotif(NotificationType.Error, $"Error renaming preset {presetName} to {s}, as a preset of name {s} already exists!");
+            });
             var applyButton = _category.CreateFunction("Apply Preset", Color.cyan, () =>
             {
                 _presetManager.LoadPresets();
@@ -141,7 +148,7 @@ namespace MoreItemsInDevTools
             }
             );
             FunctionElement removePresetButton;
-            if (presetName != "DEFAULT")
+            if (presetName != PresetManager.DEFAULT_PRESET_NAME)
             {
                 removePresetButton = _category.CreateFunction("Remove Preset", Color.red, () =>
                 {
@@ -170,18 +177,22 @@ namespace MoreItemsInDevTools
 
         public static void CreatePBarcodeCatagory(Page category, string Barcode)
         {
-            Crate e;
-            AssetWarehouse.Instance.TryGetCrate(new Barcode() { ID = Barcode }, out e);
-            var Title = e.Title;
-            var _category = category.CreatePage(Title, Color.white, createLink: false);
+            var crateRef = new SpawnableCrateReference(Barcode);
+            var isValid = crateRef.Crate != null;
+            var title = "Invalid Crate";
+
+            if (isValid)
+                title = crateRef.Crate.Title;
+            
+            var _category = category.CreatePage(title, (isValid ? Color.white : Color.red), createLink: false);
             var _categoryLink = category.CreatePageLink(_category);
 
 #if DEBUG
-            Main.MelonLog.Msg("Creating new Preset Item element with Title "+Title+" and barcode "+Barcode);
+            Main.MelonLog.Msg("Creating new Preset Item element with Title "+title+" and barcode "+Barcode);
 #endif
 
-            var titleElement = _category.CreateFunction(Title, Color.white, () => { });
-            var barcodeElement = _category.CreateFunction(Barcode, Color.white, () => { });
+            var titleElement = _category.CreateFunction(title, Color.white, null);
+            var barcodeElement = _category.CreateFunction(Barcode, Color.white, null);
             var removeButtom = _category.CreateFunction("Remove Item", Color.red, () =>
             {
                 _presetManager.RemoveBarcodeFromPreset(category.Name, Barcode);
@@ -189,15 +200,6 @@ namespace MoreItemsInDevTools
                 category.Remove(_categoryLink);
                 Menu.OpenPage(category);
             });
-        }
-
-        public static void CheckForDefaultPreset()
-        {
-            if (!_presetManager.presets.ContainsKey("DEFAULT"))
-            {
-                BoneMenuNotif(BoneLib.Notifications.NotificationType.Error, "Error: No DEFAULT preset detected! Attempting to create a new one \n Organization of the JSON file might be mangled!");
-                _presetManager.CreateNewPreset("DEFAULT");
-            }
         }
     }
 }

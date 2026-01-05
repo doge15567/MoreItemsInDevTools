@@ -12,31 +12,33 @@ namespace MoreItemsInDevTools
         internal const string Description = "Adds more items to list of items spawned by dev tools cheat";
         internal const string Author = "doge15567";
         internal const string Company = "";
-        internal const string Version = "3.0.4";
+        internal const string Version = "4.0.0";
         internal const string DownloadLink = "https://thunderstore.io/c/bonelab/p/doge15567/MoreItemsInDevTools/";
         internal static MelonLogger.Instance MelonLog;
         internal static HarmonyLib.Harmony Harmoney;
         internal static CheatTool playerCheatMenu;
 
-        public static PresetManager _presetManager = new PresetManager();
         public static string[] currentPresetArray;
         public static CheatTool currentInstance;
         public static bool oldAssemblyDetected = false;
-        public const string oadString = "An older version of the mod is installed alongside the current version, please delete MoreItemsInDevToolsML6.dll and related files!";
-
-        public override void OnEarlyInitializeMelon()
-        {
-        }
+        public const string oadString = "An older version of the mod is installed alongside the current version, delete MoreItemsInDevToolsML6.dll.";
+        public static bool hasFusion = false;
 
         public override void OnInitializeMelon()
         {
             MelonLog = LoggerInstance;
             Harmoney = HarmonyInstance;
             MelonLog.Msg("Initalised Mod");
-            _presetManager.OnStart();
             if (CheckIfAssemblyLoaded("MoreItemsInDevToolsML6")) oldAssemblyDetected = true;
             if (oldAssemblyDetected) MelonLog.Warning(oadString);
             if (CheckIfAssemblyLoaded("BoneLib")) BonelibSetup();
+            if (CheckIfAssemblyLoaded("LabFusion")) hasFusion = true;
+
+            if (hasFusion)
+            {
+                Patches.AddDevMenuPatch.Patch();
+                Patches.PreventFusionPatch.Patch();
+            }
         }
 
         private static void BonelibSetup()

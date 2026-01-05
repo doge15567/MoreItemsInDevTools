@@ -9,9 +9,6 @@ using System.IO;
 
 namespace MoreItemsInDevTools
 {
-    //using BoneLib;
-    using Il2CppInterop.Runtime.Runtime;
-    //using Newtonsoft.Json;
     using MelonLoader.Utils;
     using System;
     using System.Collections.Generic;
@@ -26,9 +23,10 @@ namespace MoreItemsInDevTools
 
     public class PresetManager
     {
+        public const string DEFAULT_PRESET_NAME = "DEFAULT";
         public Dictionary<string, PresetData> presets;
         private string filePath = $"{MelonEnvironment.UserDataDirectory}/MoreItemsInDevTools.json";
-        public readonly Dictionary<string, PresetData> DefaultJsonDict = new Dictionary<string, PresetData>() { { "DEFAULT", new PresetData
+        public readonly Dictionary<string, PresetData> DefaultJsonDict = new Dictionary<string, PresetData>() { { DEFAULT_PRESET_NAME, new PresetData
                 {
                     Barcodes = new List<string>
                     {
@@ -55,6 +53,10 @@ namespace MoreItemsInDevTools
         {
             LoadPresets();
             SavePresets();
+            if (presets.ContainsKey(DEFAULT_PRESET_NAME))
+            {
+                Main.currentPresetArray = presets[DEFAULT_PRESET_NAME].Barcodes.ToArray();
+            }
         }
 
         public void LoadPresets()
@@ -63,7 +65,6 @@ namespace MoreItemsInDevTools
             {
                 string json = File.ReadAllText(filePath);
                 presets = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, PresetData>>(json);
-                //presets = JsonConvert.DeserializeObject<Dictionary<string, PresetData>>(json); // This angers the compiler for some reason but just compile again and you'l be good.
 #if DEBUG
                 Main.MelonLog.Msg("Loaded JSON file.");
 #endif
@@ -80,21 +81,11 @@ namespace MoreItemsInDevTools
 
         public void SavePresets()
         {
-            //string json = JsonConvert.SerializeObject(presets, Formatting.Indented);
             string json = JsonSerializer.Serialize(presets, prettyPrint);
             File.WriteAllText(filePath, json);
 #if DEBUG
             Main.MelonLog.Msg("Saved presets to file.");
 #endif
-        }
-
-        public void CheckForDefaultPreset()
-        {
-            if (!(presets.ContainsKey("DEFAULT")))
-            {
-                //BoneMenuNotif(BoneLib.Notifications.NotificationType.Error, "Error: No DEFAULT preset detected! Attempting to create a new one \n Organization of the JSON file might be mangled!");
-                CreateNewPreset("DEFAULT");
-            }
         }
         public void AddBarcodeToPreset(string presetName, string barcode)
         {
@@ -149,7 +140,6 @@ namespace MoreItemsInDevTools
             else
             {
                 Main.MelonLog.Msg("Function CreateNewPreset: Attempted to create a new preset with a pre-existing name.");
-                //Bonemenu.BoneMenuNotif(BoneLib.Notifications.NotificationType.Error, "Attempted to create a new preset with a pre-existing name \n Please rename presets in a text editor before creating more.");
                 return false;
             }
         }

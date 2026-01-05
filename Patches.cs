@@ -1,21 +1,10 @@
-﻿using Il2CppSystem;
-using HarmonyLib;
-
-using Il2CppSLZ.UI;
-
-
-using MelonLoader;
-using Action = System.Action;
-using Il2CppSLZ.Marrow.Data;
-using BoneLib;
-using Il2CppSLZ.Marrow.Warehouse;
-
-using LabFusion.Data;
-using LabFusion.Network;
+﻿using HarmonyLib;
 using Il2CppSLZ.Bonelab;
-using LabFusion.Player;
+using Il2CppSLZ.Marrow.Data;
+using Il2CppSLZ.Marrow.Warehouse;
 using LabFusion.RPC;
-
+using LabFusion.Scene;
+using UnityEngine;
 
 
 namespace MoreItemsInDevTools.Patches
@@ -25,62 +14,98 @@ namespace MoreItemsInDevTools.Patches
 
     public class CheatToolPatch
     {
-        static bool Prefix(CheatTool __instance)
+        static void Prefix(CheatTool __instance)
         {
             Main.currentInstance = __instance;
-
 #if DEBUG
             Main.MelonLog.Msg("CheatTool Prefix called.");
 #endif
-            Main._presetManager.CheckForDefaultPreset();
-            Main._presetManager.LoadPresets();
+            Bonemenu._presetManager.LoadPresets();
 
-            string[] Items = Main._presetManager.presets["DEFAULT"].Barcodes.ToArray();
-            Main.SetCheatMenuItems(Items);
-
-            return true;
+            if (Main.currentPresetArray == null || Main.currentPresetArray is null || Bonemenu.ApplyDefaultOnLevelLoad.Value) // brah
+            {
+                if (Bonemenu._presetManager.presets.ContainsKey(PresetManager.DEFAULT_PRESET_NAME))
+                {
+                    Main.SetCheatMenuItems(Bonemenu._presetManager.presets[PresetManager.DEFAULT_PRESET_NAME].Barcodes.ToArray());
+                }
+            }
+            else
+                Main.SetCheatMenuItems(Main.currentPresetArray);
         }
-
     }
 
-
-
-
-    [HarmonyPatch(typeof(LabFusion.Patching.AddDevMenuPatch), nameof(LabFusion.Patching.AddDevMenuPatch.OnSpawnDelegate))]
-    public static class PreventFusionPatch
+    public static class AddDevMenuPatch
     {
-        [HarmonyPrefix]
-        public static bool Prefix(PopUpMenuView menu, Action originalDelegate)
+        public static void Patch()
         {
-            // If there is no server, we can just spawn the original items as normal
-            if (!NetworkInfo.HasServer)
+            var orig = typeof(PopUpMenuView).GetMethod(nameof(PopUpMenuView.AddDevMenu), AccessTools.all);
+            var prefix = new HarmonyMethod(typeof(AddDevMenuPatch).GetMethod("Prefix", AccessTools.all));
+
+            Main.Harmoney.Patch(orig, prefix);
+        }
+        public static void Prefix(PopUpMenuView __instance, ref Il2CppSystem.Action spawnDelegate)
+        {
+            // Completely override the spawn delegate with modified networked version
+            var originalDelegate = Il2CppSystem.Action.Combine(spawnDelegate).TryCast<Il2CppSystem.Action>();
+
+            spawnDelegate = (Il2CppSystem.Action)(() => { OnSpawnDelegate(__instance, originalDelegate); });
+        }
+        public static void OnSpawnDelegate(PopUpMenuView menu, Il2CppSystem.Action originalDelegate)
+        {
+            // If there is no server, leave method
+            if (!NetworkSceneManager.IsLevelNetworked)
             {
-                return true;
+                originalDelegate?.Invoke();
+                return;
             }
 
-            CheatTool playerCheatMenu = Main.currentInstance;
             var transform = menu.radialPageView.transform;
 
             // Sanitization, prevent skid crashing by only allowing 5 unique spawnables to be spawned at a time.
-            string[] sanitizedStringArray = Main.RemoveDuplicateBarcodes(Main.currentPresetArray);
-            System.Array.Resize(ref sanitizedStringArray, 5);
+
+            var gameList = new List<string>();
+            foreach (var item in Main.currentInstance.crates)
+                gameList.Add(item.Barcode.ID);
             
-            foreach (string crateRef in sanitizedStringArray)
+            string[] sanitizedStringArray = Main.RemoveDuplicateBarcodes(gameList.ToArray());
+            if (sanitizedStringArray.Length > 5) 
+                Array.Resize(ref sanitizedStringArray, 5);
+
+            foreach (string barcode in sanitizedStringArray)
             {
-                var spawnable = new Spawnable() { crateRef = new(crateRef) };
+#if DEBUG
+                Main.MelonLog.Msg($"Attempting to spawn {barcode}.");
+#endif
+                SpawnableCrateReference crateRef = new(barcode);
+                if (!crateRef.IsValid()) continue;
+                var spawnable = new Spawnable() { crateRef = crateRef };
                 var spawnableFusionInfo = new NetworkAssetSpawner.SpawnRequestInfo()
                 {
-                    spawnable = spawnable,
-                    position = transform.position,
-                    rotation = transform.rotation
+                    Spawnable = spawnable,
+                    Position = transform.position,
+                    Rotation = transform.rotation,
+#if DEBUG
+                    SpawnCallback = (info) => Main.MelonLog.Msg($"Spawned {barcode} ({info.Spawned.name}).")
+#endif
                 };
 
                 NetworkAssetSpawner.Spawn(spawnableFusionInfo);
             }
-
-            return false;
         }
     }
 
-   
+    public static class PreventFusionPatch
+    {
+        public static void Patch()
+        {
+            var orig = typeof(MarrowFusion.Bonelab.Patching.PopUpMenuViewPatches).GetMethod("AddDevMenuPrefix", AccessTools.all);
+            var prefix = new HarmonyMethod(typeof(PreventFusionPatch).GetMethod("Prefix", AccessTools.all));
+
+            Main.Harmoney.Patch(orig, prefix);
+        }
+        public static bool Prefix()
+        {
+            return false;
+        }
+    }
 }
