@@ -33,12 +33,6 @@ namespace MoreItemsInDevTools
             if (oldAssemblyDetected) MelonLog.Warning(oadString);
             if (CheckIfAssemblyLoaded("BoneLib")) BonelibSetup();
             if (CheckIfAssemblyLoaded("LabFusion")) hasFusion = true;
-
-            if (hasFusion)
-            {
-                Patches.AddDevMenuPatch.Patch();
-                //Patches.PreventFusionPatch.Patch();
-            }
         }
 
         private static void BonelibSetup()
